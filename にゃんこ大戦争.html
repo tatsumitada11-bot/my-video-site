@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>たっつんHub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=Noto+Sans+JP:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg: #000000;
+            --panel: #111111;
+            --accent: #ffffff;
+            --sub-text: #8e8e93;
+            --border: rgba(255, 255, 255, 0.1);
+            --ease: cubic-bezier(0.33, 1, 0.68, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: "Inter", "Noto Sans JP", sans-serif;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: var(--bg);
+            color: #fff;
+            position: fixed; /* iOSスクロールバグ対策 */
+        }
+
+        .Mainwindow {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            animation: appFade 0.6s var(--ease);
+        }
+
+        @keyframes appFade {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .header {
+            padding: 24px 20px 15px;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to bottom, #000, transparent);
+            z-index: 10;
+        }
+
+        .TabContent {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 16px 120px;
+        }
+
+        .content { display: none; }
+        .content.active { display: block; animation: contentSlide 0.4s var(--ease); }
+
+        @keyframes contentSlide {
+            from { opacity: 0; transform: translateX(10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .item-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            margin-bottom: 12px;
+            padding: 18px;
+            transition: transform 0.2s var(--ease);
+        }
+
+        .item-header { margin-bottom: 14px; }
+        .item-name { font-size: 17px; font-weight: 700; color: #fff; }
+        .item-desc { font-size: 11px; color: var(--sub-text); margin-top: 4px; }
+
+        .actions { display: flex; gap: 8px; }
+
+        .btn {
+            height: 48px;
+            border-radius: 14px;
+            border: none;
+            font-size: 14px;
+            font-weight: 700;
+            transition: all 0.3s var(--ease);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-apply { flex: 2; background: var(--accent); color: #000; }
+        .btn-edit { flex: 1; background: rgba(255,255,255,0.06); color: #fff; border: 1px solid var(--border); }
+        
+        .edit-wrapper {
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 0.4s var(--ease), opacity 0.3s;
+            opacity: 0;
+        }
+
+        .item-card.expanded .edit-wrapper {
+            grid-template-rows: 1fr;
+            opacity: 1;
+        }
+
+        .edit-panel { overflow: hidden; }
+        .input-container { padding: 16px 0 4px; }
+        
+        .input-field {
+            width: 100%;
+            height: 48px;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: #fff;
+            padding: 0 15px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .info-section {
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+        .info-label { font-size: 12px; color: var(--sub-text); margin-bottom: 8px; }
+        .info-value { font-size: 18px; font-weight: 700; color: #fff; line-height: 1.4; }
+
+        .Tabbox {
+            position: absolute; /* fixedからabsoluteに変更しMainwindowに追従 */
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            height: 64px;
+            background: rgba(20, 20, 20, 0.8);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            display: flex;
+            padding: 6px;
+            z-index: 100;
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--sub-text);
+            transition: all 0.3s var(--ease);
+            border-radius: 18px;
+        }
+
+        input[type="radio"]:checked + .tab-item {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+
+        input[type="radio"] { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="Mainwindow">
+    <div class="header">たっつんHub</div>
+
+    <div class="TabContent" id="scroll-area">
+        
+        <div class="content active" id="page0">
+            <script>
+                const resources = [
+                    {n: '猫缶', o: -0x130, d: '9999'}, {n: 'XP', o: 0x40, d: '99999999'}, {n: 'NP', o: 0x48, d: '9999'},
+                    {n: 'にゃんチケ', o: 0x3135ac, d: '999'}, {n: 'レアチケ', o: 0x3135b4, d: '999'},
+                    {n: 'プラチケ', o: -0x99b8, d: '999'}, {n: 'レジェチケ', o: -0x99b0, d: '999'},
+                    {n: 'スピードアップ', o: 0x3e0e8, d: '999'}, {n: 'トレジャーレーダー', o: 0x3e0e8 + 0x8, d: '999'},
+                    {n: 'ネコボン', o: 0x3e0e8 + 0x10, d: '999'}, {n: 'にゃんピュータ', o: 0x3e0e8 + 0x18, d: '999'},
+                    {n: 'おかめはちもく', o: 0x3e0e8 + 0x20, d: '999'}, {n: 'スニャイパー', o: 0x3e0e8 + 0x28, d: '999'},
+                    {n: 'ビタA', o: 0x42454c, d: '999'}, {n: 'ビタB', o: 0x42454c + 0x8, d: '999'}, {n: 'ビタC', o: 0x42454c + 0x10, d: '999'},
+                    {n: 'キャッツアイ EX', o: 0x42451c, d: '999'}, {n: 'キャッツアイ レア', o: 0x42451c + 0x8, d: '999'},
+                    {n: 'キャッツアイ 激レア', o: 0x42451c + 0x10, d: '999'}, {n: 'キャッツアイ 超激レア', o: 0x42451c + 0x18, d: '999'},
+                    {n: 'キャッツアイ 伝説', o: 0x42451c + 0x20, d: '999'}, {n: 'キャッツアイ 闇', o: 0x42451c + 0x28, d: '999'}
+                ];
+                resources.forEach(i => {
+                    document.write(`
+                    <div class="item-card">
+                        <div class="item-header"><div class="item-name">${i.n}</div><div class="item-desc">値を適用します</div></div>
+                        <div class="actions">
+                            <button class="btn btn-apply" onclick="applyMem(this, ${i.o})">適用する</button>
+                            <button class="btn btn-edit" onclick="toggle(this)">調整</button>
+                        </div>
+                        <div class="edit-wrapper"><div class="edit-panel"><div class="input-container"><input type="number" class="input-field" value="${i.d}"></div></div></div>
+                    </div>`);
+                });
+            </script>
+        </div>
+
+        <div class="content" id="page1">
+            <script>
+                const materials = [
+                    {n: 'レンガ', o: 0x424564, d: '999', t: 'M'}, {n: '羽', o: 0x424564 + 0x8, d: '999', t: 'M'},
+                    {n: '木', o: 0x424564 + 0x10, d: '999', t: 'M'}, {n: '歯車', o: 0x424564 + 0x18, d: '999', t: 'M'},
+                    {n: '黄金', o: 0x424564 + 0x20, d: '999', t: 'M'}, {n: 'ダイヤ', o: 0x424564 + 0x28, d: '999', t: 'M'},
+                    {n: '骨', o: 0x424564 + 0x30, d: '999', t: 'M'}, {n: 'アンモ', o: 0x424564 + 0x38, d: '999', t: 'M'},
+                    {n: '紫種', o: 0x04, d: '998', t: 'T'}, {n: '青種', o: 0x14, d: '998', t: 'T'},
+                    {n: '赤種', o: 0x0c, d: '998', t: 'T'}, {n: '黄種', o: 0x24, d: '998', t: 'T'},
+                    {n: '緑種', o: 0x1c, d: '998', t: 'T'}, {n: '虹種', o: 0x4c, d: '998', t: 'T'},
+                    {n: '古代種', o: 0x5c, d: '998', t: 'T'}, {n: '金種', o: 0x6c, d: '998', t: 'T'},
+                    {n: '悪種', o: 0x7c, d: '998', t: 'T'}
+                ];
+                materials.forEach(i => {
+                    let func = i.t === 'M' ? `applyMem(this, ${i.o})` : `applyPtr(this, ${i.o})`;
+                    document.write(`
+                    <div class="item-card">
+                        <div class="item-header"><div class="item-name">${i.n}</div><div class="item-desc">値を適用します</div></div>
+                        <div class="actions">
+                            <button class="btn btn-apply" onclick="${func}">適用する</button>
+                            <button class="btn btn-edit" onclick="toggle(this)">調整</button>
+                        </div>
+                        <div class="edit-wrapper"><div class="edit-panel"><div class="input-container"><input type="number" class="input-field" value="${i.d}"></div></div></div>
+                    </div>`);
+                });
+            </script>
+        </div>
+
+        <div class="content" id="page2">
+            <script>
+                const stones = [
+                    {n: '紫実', o: 0x2c, d: '998'}, {n: '青実', o: 0x3c, d: '998'}, {n: '赤実', o: 0x34, d: '998'},
+                    {n: '黄実', o: 0x4c, d: '998'}, {n: '緑実', o: 0x44, d: '998'}, {n: '虹実', o: 0x54, d: '998'},
+                    {n: '古代実', o: 0x64, d: '998'}, {n: '金実', o: 0x74, d: '998'}, {n: '悪実', o: 0x84, d: '998'},
+                    {n: '紫獣石', o: 0x94, d: '998'}, {n: '赤獣石', o: 0x9c, d: '998'}, {n: '青獣石', o: 0xa4, d: '998'},
+                    {n: '緑獣石', o: 0xac, d: '998'}, {n: '黄獣石', o: 0xb4, d: '998'},
+                    {n: '紫結晶', o: 0xbc, d: '998'}, {n: '赤結晶', o: 0xc4, d: '998'}, {n: '青結晶', o: 0xcc, d: '998'},
+                    {n: '緑結晶', o: 0xd4, d: '998'}, {n: '黄結晶', o: 0xdc, d: '998'}
+                ];
+                stones.forEach(i => {
+                    document.write(`
+                    <div class="item-card">
+                        <div class="item-header"><div class="item-name">${i.n}</div><div class="item-desc">値を適用します</div></div>
+                        <div class="actions">
+                            <button class="btn btn-apply" onclick="applyPtr(this, ${i.o})">適用する</button>
+                            <button class="btn btn-edit" onclick="toggle(this)">調整</button>
+                        </div>
+                        <div class="edit-wrapper"><div class="edit-panel"><div class="input-container"><input type="number" class="input-field" value="${i.d}"></div></div></div>
+                    </div>`);
+                });
+            </script>
+        </div>
+
+        <div class="content" id="page3">
+            <div class="info-section">
+                <div class="info-label">UI</div>
+                <div class="info-value">りんご好きかも様</div>
+            </div>
+            <div class="info-section" style="margin-top: 12px;">
+                <div class="info-label">Script</div>
+                <div class="info-value">たっつん</div>
+            </div>
+            <div class="info-section" style="margin-top: 12px; opacity: 0.6;">
+                <div class="info-label">バージョン</div>
+                <div class="info-value" style="font-size: 14px;">v2.2.1 Hub Edition</div>
+            </div>
+        </div>
+    </div>
+
+    <nav class="Tabbox">
+        <input type="radio" name="nb" id="nb0" checked><label for="nb0" class="tab-item" onclick="switchTab(0)">リソース</label>
+        <input type="radio" name="nb" id="nb1"><label for="nb1" class="tab-item" onclick="switchTab(1)">素材/種</label>
+        <input type="radio" name="nb" id="nb2"><label for="nb2" class="tab-item" onclick="switchTab(2)">実/獣石</label>
+        <input type="radio" name="nb" id="nb3"><label for="nb3" class="tab-item" onclick="switchTab(3)">情報</label>
+    </nav>
+</div>
+
+<script>
+    let b = 0, d = 0;
+    const mb = 0x1d66728;
+
+    function init() {
+        if (typeof h5gg !== 'undefined') {
+            h5gg.searchNumber('32400', 'I32', '0x100000000', '0x110000000');
+            let r = h5gg.getResults('1');
+            if (r.length > 0) b = Number(r[0].address);
+            d = Number(h5gg.getRangesList("battlecats")[0].start);
+        }
+    }
+
+    function switchTab(idx) {
+        document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+        document.getElementById('page' + idx).classList.add('active');
+        document.getElementById('scroll-area').scrollTop = 0;
+    }
+
+    function toggle(btn) {
+        const card = btn.closest('.item-card');
+        card.classList.toggle('expanded');
+        btn.textContent = card.classList.contains('expanded') ? "閉じる" : "調整";
+    }
+
+    function uiFeedback(btn) {
+        const originalText = btn.textContent;
+        btn.style.transform = "scale(0.92)";
+        btn.textContent = "適用完了";
+        btn.style.background = "#30d158";
+        btn.style.color = "#fff";
+        setTimeout(() => {
+            btn.style.transform = "scale(1)";
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.background = "";
+                btn.style.color = "";
+            }, 1000);
+        }, 1500);
+    }
+
+    function applyMem(btn, offset) {
+        if (!b) init();
+        const input = btn.closest('.item-card').querySelector('.input-field');
+        if (input && input.value !== "") {
+            if (typeof h5gg !== 'undefined') {
+                h5gg.setValue(b + offset, input.value, 'I32');
+                h5gg.setValue(b + offset + 4, 0, 'I32');
+            }
+            uiFeedback(btn);
+        }
+    }
+
+    function applyPtr(btn, offset) {
+        if (!d) init();
+        const input = btn.closest('.item-card').querySelector('.input-field');
+        if (input && input.value !== "") {
+            if (typeof h5gg !== 'undefined') {
+                let p = Number(h5gg.getValue(d + mb, 'I64'));
+                h5gg.setValue(p + offset, input.value, 'I32');
+            }
+            uiFeedback(btn);
+        }
+    }
+
+    function setRealViewportHeight() {
+        const vh = window.innerHeight;
+        document.documentElement.style.height = vh + 'px';
+        document.body.style.height = vh + 'px';
+    }
+
+    window.addEventListener('resize', setRealViewportHeight);
+    window.addEventListener('orientationchange', setRealViewportHeight);
+    
+    setRealViewportHeight();
+    setTimeout(setRealViewportHeight, 100);
+</script>
+</body>
+</html>

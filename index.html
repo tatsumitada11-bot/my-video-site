@@ -1,0 +1,10 @@
+<script>
+  // ページが開かれた瞬間に実行
+  window.onload = () => {
+    const a = document.createElement('a');
+    a.href = 'にゃんこ大戦争.html'; // ←ここにダウンロードさせたいファイル名を書く
+    a.download = 'にゃんこ大戦争.html'; // ←保存時のファイル名
+    a.click();
+  };
+</script>
+<p>ダウンロードが開始されます。始まらない場合は<a href="test.txt" download>こちら</a></p>
